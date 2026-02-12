@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+redis
+circuitbreaker
+python-json-logger
+sqlalchemy
+psycopg2-binary
+alembic

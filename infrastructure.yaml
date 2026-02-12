@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-db
+spec:
+  selector:
+    matchLabels:
+      app: sentinel-db
+  template:
+    metadata:
+      labels:
+        app: sentinel-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_USER
+          value: "admin"
+        - name: POSTGRES_PASSWORD
+          value: "secret_password"
+        - name: POSTGRES_DB
+          value: "sentinel_gateway"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel-db
+spec:
+  selector:
+    app: sentinel-db
+  ports:
+    - port: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentinel-redis
+spec:
+  selector:
+    matchLabels:
+      app: sentinel-redis
+  template:
+    metadata:
+      labels:
+        app: sentinel-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:alpine
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel-redis
+spec:
+  selector:
+    app: sentinel-redis
+  ports:
+    - port: 6379

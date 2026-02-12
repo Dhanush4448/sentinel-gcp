@@ -1,0 +1,50 @@
+services:
+  # 1. PERSISTENCE LAYER: PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: sentinel-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret_password
+      POSTGRES_DB: sentinel_gateway
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  # 2. CACHING LAYER: Redis
+  redis:
+    image: redis/redis-stack-server:latest
+    container_name: sentinel-redis
+    ports:
+      - "6379:6379"
+      - "8001:8001" 
+    restart: always
+
+  # 3. GATEWAY LAYER: FastAPI
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: sentinel-gateway
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app  # <--- CRITICAL: This syncs your Windows files with the container
+    environment:
+      - REDIS_HOST=sentinel-redis
+      - REDIS_PORT=6379
+      - DB_HOST=sentinel-db
+      - DB_PORT=5432
+      - DB_USER=admin
+      - DB_PASSWORD=secret_password
+      - DB_NAME=sentinel_gateway
+      - PYTHONPATH=/app
+    depends_on:
+      - redis
+      - db
+    restart: on-failure
+
+volumes:
+  postgres_data:
