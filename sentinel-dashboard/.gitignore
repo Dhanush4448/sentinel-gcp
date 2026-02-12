@@ -1,0 +1,10 @@
+# Dashboard ignores
+sentinel-dashboard/node_modules
+sentinel-dashboard/.next
+sentinel-dashboard/.env
+sentinel-dashboard/pgdata
+
+# Engine ignores
+sentinel-gcp/venv
+sentinel-gcp/__pycache__
+sentinel-gcp/.env

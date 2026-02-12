@@ -1,0 +1,18 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model SecurityLog {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+  user_id   String
+  action    String
+  tier      String
+
+  @@index([timestamp(sort: Desc)])
+}
