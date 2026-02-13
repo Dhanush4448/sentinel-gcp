@@ -6,9 +6,9 @@ services:
     container_name: sentinel-dashboard-db-1
     restart: always  # Industry Upgrade: Auto-heals if the container or system crashes
     environment:
-      POSTGRES_USER: user_admin
-      POSTGRES_PASSWORD: password_admin
-      POSTGRES_DB: sentinel_db
+      POSTGRES_USER: ${POSTGRES_USER:-user_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password_admin}
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel_db}
     ports:
       - "5432:5432"
     volumes:
@@ -26,7 +26,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: "postgresql://user_admin:password_admin@db:5432/sentinel_db"
+      DATABASE_URL: ${DATABASE_URL:-"postgresql://${POSTGRES_USER:-user_admin}:${POSTGRES_PASSWORD:-password_admin}@db:5432/${POSTGRES_DB:-sentinel_db}"}
     depends_on:
       db:
         condition: service_healthy

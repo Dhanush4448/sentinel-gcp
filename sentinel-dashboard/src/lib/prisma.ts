@@ -2,17 +2,36 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
-const connectionString = `${process.env.DATABASE_URL}`;
+// Only initialize Prisma if DATABASE_URL is available and valid
+const hasDatabase = process.env.DATABASE_URL && process.env.DATABASE_URL.trim() !== '';
 
-const pool = new Pool({ connectionString });
-const adapter = new PrismaPg(pool);
+let prismaInstance: PrismaClient | null = null;
 
-const prismaClientSingleton = () => {
-  return new PrismaClient({ adapter });
-};
+if (hasDatabase) {
+  try {
+    const connectionString = process.env.DATABASE_URL!;
+    const pool = new Pool({ connectionString });
+    const adapter = new PrismaPg(pool);
 
-const globalForPrisma = global as unknown as { prisma: ReturnType<typeof prismaClientSingleton> };
+    const prismaClientSingleton = () => {
+      return new PrismaClient({ adapter });
+    };
 
-export const prisma = globalForPrisma.prisma || prismaClientSingleton();
+    const globalForPrisma = global as unknown as { prisma: ReturnType<typeof prismaClientSingleton> };
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+    prismaInstance = globalForPrisma.prisma || prismaClientSingleton();
+
+    if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prismaInstance;
+  } catch (error) {
+    console.warn('Failed to initialize Prisma with database adapter:', error);
+    prismaInstance = null;
+  }
+} else {
+  // Silent mode - don't show warning in production, only in development
+  if (process.env.NODE_ENV === 'development') {
+    console.info('ℹ️  DATABASE_URL not set - using JWT sessions (database features unavailable)');
+  }
+}
+
+// Export prisma with safe access
+export const prisma = prismaInstance as PrismaClient;

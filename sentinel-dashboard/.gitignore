@@ -1,10 +1,83 @@
-# Dashboard ignores
-sentinel-dashboard/node_modules
-sentinel-dashboard/.next
-sentinel-dashboard/.env
-sentinel-dashboard/pgdata
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
 
-# Engine ignores
-sentinel-gcp/venv
-sentinel-gcp/__pycache__
-sentinel-gcp/.env
+# Testing
+coverage/
+.nyc_output
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Production
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment variables - CRITICAL: Never commit these!
+.env
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Database
+pgdata/
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Prisma
+prisma/migrations/
+
+# Python (if any)
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Secrets and keys
+*.pem
+*.key
+*.cert
+secrets/
+.secrets
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts
+*.tgz
+*.tar.gz

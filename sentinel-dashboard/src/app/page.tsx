@@ -1,71 +1,105 @@
-"use client";
+﻿import { signIn, auth } from '@/auth'
+import { redirect } from 'next/navigation'
+import { Navbar } from '@/components/Navbar'
 
-import { useEffect, useState } from "react";
+export default async function Home() {
+  const session = await auth()
 
-interface LogEntry {
-  id: string;
-  timestamp: string | Date;
-  event?: string;    // Common Prisma field
-  activity?: string; // Fallback from your Activity Summarizer project
-  message?: string;  // General fallback
-  severity?: string; // Common field
-  level?: string;    // Fallback for logging levels
-}
-
-export default function LogTable() {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchLogs() {
-      try {
-        const response = await fetch("/api/logs?page=1&limit=10");
-        const data = await response.json();
-        setLogs(data);
-      } catch (error) {
-        console.error("Failed to fetch Sentinel logs:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchLogs();
-  }, []);
-
-  if (loading) return <div className="text-gray-500 animate-pulse p-4">Loading encrypted logs...</div>;
+  // If user is authenticated, redirect to dashboard
+  if (session?.user) {
+    redirect('/dashboard')
+  }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-gray-800 bg-gray-900/30">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="border-b border-gray-800 text-gray-400 text-sm">
-            <th className="p-4 font-medium">Timestamp</th>
-            <th className="p-4 font-medium">Event</th>
-            <th className="p-4 font-medium">Severity</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-800">
-          {logs.map((log) => (
-            <tr key={log.id} className="hover:bg-gray-800/40 transition-colors">
-              <td className="p-4 text-sm text-gray-300">
-                {new Date(log.timestamp).toLocaleString()}
-              </td>
-              <td className="p-4 text-sm text-white">
-                {/* Checks multiple possible field names from your Prisma schema */}
-                {log.event || log.activity || log.message || "N/A"}
-              </td>
-              <td className="p-4 text-sm">
-                <span className={`px-2 py-1 rounded-md text-xs font-bold ${
-                  (log.severity || log.level)?.toLowerCase() === 'critical' ? 'bg-red-500/20 text-red-400' :
-                  (log.severity || log.level)?.toLowerCase() === 'warning' ? 'bg-yellow-500/20 text-yellow-400' :
-                  'bg-blue-500/20 text-blue-400'
-                }`}>
-                  {(log.severity || log.level) || "INFO"}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <Navbar />
+      
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-4">
+            Sentinel Dashboard
+          </h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            Enterprise-grade security monitoring and authentication platform
+          </p>
+        </div>
+
+        <div className="max-w-md mx-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-white font-bold text-2xl">S</span>
+              </div>
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+                Welcome Back
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400">
+                Sign in to access your dashboard
+              </p>
+            </div>
+
+            <form
+              action={async () => {
+                'use server'
+                await signIn('google', { 
+                  redirectTo: '/dashboard'
+                })
+              }}
+            >
+              <button 
+                type="submit"
+                className="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  />
+                </svg>
+                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                  Continue with Google
                 </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </button>
+            </form>
+
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-xs text-center text-gray-500 dark:text-gray-400">
+                By signing in, you agree to our Terms of Service and Privacy Policy
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">🔒</div>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">Secure</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Enterprise-grade security</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">⚡</div>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">Fast</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Lightning fast performance</p>
+            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400 mb-1">📊</div>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">Analytics</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Real-time monitoring</p>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
-  );
+  )
 }
