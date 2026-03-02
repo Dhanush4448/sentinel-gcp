@@ -13,30 +13,14 @@ if (!process.env.AUTH_SECRET) {
   throw new Error("Missing AUTH_SECRET environment variable")
 }
 
-// Check if database is available, otherwise use JWT sessions
-// We'll start with JWT sessions and only use database if connection succeeds
-const shouldUseDatabase = shouldTryDatabase()
+// In local/dev, use JWT sessions only to avoid breaking auth if the database
+// container or Prisma migrations are not fully set up yet.
+// The Prisma adapter is only needed for persistent database sessions.
+const shouldUseDatabase = false
 
-// Initialize adapter conditionally
-// We'll test the connection on first use - if it fails, NextAuth will fall back gracefully
-let adapter: ReturnType<typeof PrismaAdapter> | undefined
-let useDatabase = false
-
-if (shouldUseDatabase && prisma) {
-  try {
-    adapter = PrismaAdapter(prisma)
-    // Start with database sessions - if connection fails, NextAuth will handle it
-    useDatabase = true
-  } catch (error) {
-    console.warn("Failed to initialize PrismaAdapter, falling back to JWT sessions:", error)
-    adapter = undefined
-    useDatabase = false
-  }
-} else {
-  if (process.env.NODE_ENV === 'development') {
-    console.info('ℹ️  Database not configured - using JWT sessions')
-  }
-}
+// We still keep the types, but always run with JWT sessions for now.
+const adapter: ReturnType<typeof PrismaAdapter> | undefined = undefined
+const useDatabase = false
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: adapter,
@@ -62,27 +46,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async session({ session, user, token }) {
       // Attach user role to session
       if (session.user) {
-        if (user) {
-          // Database session
-          session.user.id = user.id
-          session.user.role = (user as { role: Role }).role
-        } else if (token) {
-          // JWT session (fallback if database not available)
-          session.user.id = (token.id as string) || token.sub || ""
-          session.user.role = (token.role as Role) || "USER"
-        }
+        const email = session.user.email || (token.email as string) || ""
+        const adminEmail = process.env.ADMIN_EMAIL || "dhanushneelakantan2002@gmail.com"
+        const role: Role = email === adminEmail ? "ADMIN" : ((token.role as Role) || "USER")
+
+        session.user.id = (token.id as string) || token.sub || email || ""
+        session.user.role = role
       }
       return session
     },
     async jwt({ token, user, account }) {
-      // For JWT sessions, store role in token
-      if (user) {
-        token.role = (user as { role?: Role })?.role || "USER"
-        token.id = user.id
-      } else if (account && !token.role) {
-        // First time signing in - set default role
-        token.role = "USER"
+      // For JWT sessions, derive role from email (treat your account as ADMIN in dev)
+      const email =
+        (user && (user.email as string | null)) ||
+        (token.email as string | undefined) ||
+        null
+
+      const adminEmail = process.env.ADMIN_EMAIL || "dhanushneelakantan2002@gmail.com"
+      const isAdmin = email === adminEmail
+
+      if (!token.id) {
+        token.id = (user && (user.id as string | undefined)) || (token.sub as string | undefined) || email || ""
       }
+
+      token.role = (isAdmin ? "ADMIN" : "USER") as Role
+
       return token
     },
     async signIn({ user, account, profile }) {
