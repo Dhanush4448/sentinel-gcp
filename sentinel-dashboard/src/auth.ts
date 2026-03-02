@@ -2,6 +2,7 @@
 import Google from "next-auth/providers/google"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
+import { shouldTryDatabase } from "@/lib/db-check"
 import type { Role } from "@prisma/client"
 
 if (!process.env.AUTH_GOOGLE_ID || !process.env.AUTH_GOOGLE_SECRET) {
@@ -13,16 +14,27 @@ if (!process.env.AUTH_SECRET) {
 }
 
 // Check if database is available, otherwise use JWT sessions
-const useDatabase = !!process.env.DATABASE_URL && process.env.DATABASE_URL.trim() !== '' && !!prisma
+// We'll start with JWT sessions and only use database if connection succeeds
+const shouldUseDatabase = shouldTryDatabase()
 
-// Initialize adapter if database is available
+// Initialize adapter conditionally
+// We'll test the connection on first use - if it fails, NextAuth will fall back gracefully
 let adapter: ReturnType<typeof PrismaAdapter> | undefined
-if (useDatabase && prisma) {
+let useDatabase = false
+
+if (shouldUseDatabase && prisma) {
   try {
     adapter = PrismaAdapter(prisma)
+    // Start with database sessions - if connection fails, NextAuth will handle it
+    useDatabase = true
   } catch (error) {
     console.warn("Failed to initialize PrismaAdapter, falling back to JWT sessions:", error)
     adapter = undefined
+    useDatabase = false
+  }
+} else {
+  if (process.env.NODE_ENV === 'development') {
+    console.info('ℹ️  Database not configured - using JWT sessions')
   }
 }
 
